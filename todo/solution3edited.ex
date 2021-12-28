@@ -1,3 +1,7 @@
+"""
+Create an app to move image files into a sub directory
+"""
+
 matcher = ~r/\.(jpg|jpeg|gif|png|bmp)$/
 matched_files = File.ls!() |> Enum.filter(&Regex.match?(matcher, &1))
 # same as Enum.filter(fn x -> Regex.match?(matcher, x) end)
