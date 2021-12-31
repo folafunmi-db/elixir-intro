@@ -1,10 +1,6 @@
 defmodule Todo do
   def start do
-    filename = IO.gets("Name of .csv to load: ") |> String.trim()
-
-    read(filename)
-    |> parse
-    |> get_command
+    load_csv()
 
     # ask user for file name - done
     # open the file - done
@@ -15,6 +11,49 @@ defmodule Todo do
     # delete todo
     # load file
     # save file
+  end
+
+  def add_todo(data) do
+    # get name
+    name = get_item_name(data)
+    # get titles
+    titles = get_fields(data)
+
+    # get field values from user
+    fields = Enum.map(titles, fn field -> field_from_user(field) end)
+
+    # create todo
+    new_todo = %{name => Enum.into(fields, %{})}
+    IO.puts("New todo #{name} added.")
+
+    # merge into data
+    new_data = Map.merge(data, new_todo)
+
+    # what next
+    get_command(new_data)
+  end
+
+  def delete_todos(data) do
+    todo = IO.gets("Which of the todos do you want to delete?\n") |> String.trim()
+
+    if Map.has_key?(data, todo) do
+      IO.puts("Ok")
+      new_map = Map.drop(data, [todo])
+      IO.puts(~s("#{todo}" has been deleted.))
+      get_command(new_map)
+    else
+      IO.puts(~s(There's is no todo named "#{todo}"!))
+      show_todo(data, false)
+      delete_todos(data)
+    end
+  end
+
+  def field_from_user(name) do
+    field = IO.gets("#{name}: ") |> String.trim()
+
+    case field do
+      _ -> {name, field}
+    end
   end
 
   def get_command(data) do
@@ -33,39 +72,38 @@ defmodule Todo do
       |> String.downcase()
 
     case command do
+      "a" -> add_todo(data)
       "r" -> read(data)
       "d" -> delete_todos(data)
+      "l" -> load_csv()
       "q" -> IO.puts("Goodbye!")
       _ -> get_command(data)
     end
   end
 
-  def delete_todos(data) do
-    todo = IO.gets("Which of the todos do you want to delete?\n") |> String.trim()
+  def get_fields(data) do
+    data[hd(Map.keys(data))] |> Map.keys()
+  end
 
-    if Map.has_key?(data, todo) do
-      IO.puts("Ok")
-      new_map = Map.drop(data, [todo])
-      IO.puts(~s("#{todo}" has been deleted.))
-      get_command(new_map)
+  def get_item_name(data) do
+    name =
+      IO.gets("Enter the name of the new todo: ")
+      |> String.trim()
+
+    if Map.has_key?(data, name) do
+      IO.puts("Todo with the name already exists!\n")
+      get_item_name(data)
     else
-      IO.puts(~s(There's is no todo named "#{todo}"!))
-      show_todo(data, false)
-      delete_todos(data)
+      name
     end
   end
 
-  def read(filename) do
-    case File.read(filename) do
-      {:ok, body} ->
-        body
+  def load_csv() do
+    filename = IO.gets("Name of .csv to load: ") |> String.trim()
 
-      {:error, reason} ->
-        IO.puts(~s(Could not open file "#{filename}"\n))
-        # to provide human readable errors
-        IO.puts(~s("#{:file.format_error(reason)}"\n))
-        start()
-    end
+    read(filename)
+    |> parse
+    |> get_command
   end
 
   def parse(body) do
@@ -91,6 +129,19 @@ defmodule Todo do
         built
       end
     end)
+  end
+
+  def read(filename) do
+    case File.read(filename) do
+      {:ok, body} ->
+        body
+
+      {:error, reason} ->
+        IO.puts(~s(Could not open file "#{filename}"\n))
+        # to provide human readable errors
+        IO.puts(~s("#{:file.format_error(reason)}"\n))
+        start()
+    end
   end
 
   def show_todo(data, next_command? \\ true) do
