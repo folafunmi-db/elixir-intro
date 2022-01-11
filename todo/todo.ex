@@ -76,6 +76,7 @@ defmodule Todo do
       "r" -> read(data)
       "d" -> delete_todos(data)
       "l" -> load_csv()
+      "s" -> save_csv(data)
       "q" -> IO.puts("Goodbye!")
       _ -> get_command(data)
     end
@@ -141,6 +142,47 @@ defmodule Todo do
         # to provide human readable errors
         IO.puts(~s("#{:file.format_error(reason)}"\n))
         start()
+    end
+  end
+
+  def prepare_csv(data) do
+    headers = ["Item" | get_fields(data)]
+    items = Map.keys(data)
+    # item_rows = Map.values(data)
+    item_rows =
+      Enum.map(items, fn item ->
+        [item | Map.values(data[item])]
+      end)
+
+    rows = [headers | item_rows]
+
+    row_strings = Enum.map(rows, &Enum.join(&1, ","))
+    Enum.join(row_strings, "\n")
+
+    # IO.inspect(~s(Data: "#{data}"))
+    # IO.inspect(~s(Headers: "#{headers}"))
+    # IO.inspect(~s(Items: "#{items}"))
+    # IO.inspect(~s(Item rows: "#{item_rows}"))
+    # IO.inspect(~s(Rows: "#{rows}"))
+    # IO.inspect(~s(Rows Strings: "#{row_strings}"))
+  end
+
+  def save_csv(data) do
+    filename = IO.gets("Save csv as:") |> String.trim()
+    filedata = prepare_csv(data)
+
+    case File.write(filename, filedata) do
+      :ok ->
+        IO.puts("CSV saved!")
+        get_command(data)
+
+      {:error, reason} ->
+        IO.puts(~s(Could not save file as "#{filename}"))
+        IO.puts(~s(Because: "#{:file.format_error(reason)}" \n))
+        get_command(data)
+
+      _ ->
+        nil
     end
   end
 
