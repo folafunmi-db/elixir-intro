@@ -1,6 +1,14 @@
 defmodule Todo do
   def start do
-    load_csv()
+    input =
+      IO.gets("Would you like to create a new csv? (y/n)(n)")
+      |> String.trim()
+
+    if input == "y" do
+      create_initial_todo() |> get_command()
+    else
+      load_csv()
+    end
 
     # ask user for file name - done
     # open the file - done
@@ -31,6 +39,31 @@ defmodule Todo do
 
     # what next
     get_command(new_data)
+  end
+
+  def create_header(headers) do
+    case IO.gets("Add field: ") |> String.trim() do
+      "" -> headers
+      header -> create_header([header | headers])
+    end
+  end
+
+  def create_headers do
+    IO.puts(
+      "What data should each todo have? \n" <>
+        "Enter field name one after the other and add an empty field where you're done. \n"
+    )
+
+    create_header([])
+  end
+
+  def create_initial_todo do
+    titles = create_headers()
+    name = get_item_name(%{})
+    fields = Enum.map(titles, &field_from_user(&1))
+    IO.puts(~s(New todo "#{name}" added!))
+
+    %{name => Enum.into(fields, %{})}
   end
 
   def delete_todos(data) do
@@ -191,6 +224,20 @@ defmodule Todo do
     IO.puts("You have the following Todos: \n")
     Enum.each(items, fn item -> IO.puts(item) end)
     IO.puts("\n")
+    # IO.puts("\n-.-.-.-.-.-.-\nYou have the following TODOs(#{Enum.count(items)}): \n")
+
+    # Enum.each(items, fn item ->
+    #   IO.puts("""
+    #   Item: #{item}
+    #       • Date: #{data[item]["Date Added"]}
+    #       • Priority:  #{data[item]["Priority"]}
+    #       • Urgency:  #{data[item]["Urgency"]}
+    #       • Notes:  #{data[item]["Notes"]}
+    #       - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    #   """)
+    # end)
+
+    IO.puts("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -\n")
 
     if next_command? do
       get_command(data)
